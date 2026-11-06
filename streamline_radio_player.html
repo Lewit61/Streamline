@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streamline Radio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Rubik Font Declaration */
+        @font-face {
+            font-family: 'Rubik';
+            src: url('/fonts/rubik.ttf') format('truetype');
+            font-weight: 100 900;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        /* Prevent text selection globally across the page */
+        *, *::before, *::after {
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: 'Rubik', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: #120005;
+        }
+
+        /* Station Themes */
+        body.theme-heart {
+            background: radial-gradient(circle at 50% 30%, #e2001a 0%, #75000e 55%, #190004 100%);
+        }
+        body.theme-capital {
+            background: radial-gradient(circle at 50% 30%, #0066ff 0%, #003399 55%, #000c2e 100%);
+        }
+        body.theme-smooth {
+            background: radial-gradient(circle at 50% 30%, #6b2d90 0%, #4a1876 55%, #16002c 100%);
+        }
+
+        /* Contained Ambient Background Blobs */
+        .ambient-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.65;
+            pointer-events: none;
+            transition: background-color 0.8s ease;
+            will-change: transform;
+        }
+
+        .blob-1 {
+            width: 450px;
+            height: 450px;
+            top: 5%;
+            left: 5%;
+            animation: floatBlob1 16s ease-in-out infinite alternate;
+        }
+        .blob-2 {
+            width: 400px;
+            height: 400px;
+            bottom: 5%;
+            right: 5%;
+            animation: floatBlob2 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatBlob1 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(60px, 40px) scale(1.15); }
+            100% { transform: translate(-40px, 60px) scale(0.9); }
+        }
+        @keyframes floatBlob2 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-50px, -40px) scale(1.2); }
+            100% { transform: translate(40px, -30px) scale(0.85); }
+        }
+
+        /* Glassmorphic Panel Styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        }
+
+        .glass-card {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-card-active {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Icon State Transitions */
+        .icon-animated {
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+            display: inline-block;
+        }
+        .icon-state-hidden {
+            opacity: 0;
+            transform: scale(0.4) rotate(-45deg);
+        }
+        .icon-state-visible {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        /* Volume Icon Fade Transition */
+        .volume-icon-anim {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .volume-icon-hidden {
+            opacity: 0;
+            transform: scale(0.7);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="theme-heart text-white flex items-center justify-center p-4 relative min-h-screen">
+
+    <!-- Ambient Background Layer -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div id="blob-1" class="ambient-blob blob-1 bg-red-600"></div>
+        <div id="blob-2" class="ambient-blob blob-2 bg-pink-700"></div>
+    </div>
+
+    <!-- Main Player Panel -->
+    <main class="glass-panel w-full max-w-sm sm:max-w-md rounded-3xl p-6 sm:p-8 relative z-10 my-auto shadow-2xl">
+        
+        <!-- Header Panel with Logo Only -->
+        <header class="flex justify-center mb-6">
+            <div class="w-full bg-black/30 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-3 flex items-center justify-center min-h-[58px]">
+                <img id="streamline-logo" src="/images/logos/streamline_full_color.png" alt="Streamline Radio" onerror="this.style.visibility='hidden'" class="h-8 sm:h-9 max-w-full w-auto object-contain">
+            </div>
+        </header>
+
+        <!-- Station Selection Tabs -->
+        <nav class="grid grid-cols-3 gap-2 mb-4" aria-label="Station Selection">
+            <button id="tab-heart" onclick="switchStation('heart')" class="station-tab glass-card-active rounded-xl py-3 px-2 flex items-center justify-center transition-all duration-300 focus:outline-none">
+                <span class="font-bold text-xs sm:text-sm tracking-wide text-white">Heart UK</span>
+            </button>
+
+            <button id="tab-capital" onclick="switchStation('capital')" class="station-tab glass-card rounded-xl py-3 px-2 flex items-center justify-center transition-all duration-300 focus:outline-none">
+                <span class="font-bold text-xs sm:text-sm tracking-wide text-white/80">Capital UK</span>
+            </button>
+
+            <button id="tab-smooth" onclick="switchStation('smooth')" class="station-tab glass-card rounded-xl py-3 px-2 flex items-center justify-center transition-all duration-300 focus:outline-none">
+                <span class="font-bold text-xs sm:text-sm tracking-wide text-white/80">Smooth UK</span>
+            </button>
+        </nav>
+
+        <!-- Station Information & Square Artwork (No Animations Around Artwork) -->
+        <div class="flex flex-col items-center text-center">
+            
+            <!-- Square Container Frame with Clean Vertical Spacing -->
+            <div class="my-10 py-2">
+                <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl glass-card p-3 flex items-center justify-center relative shadow-2xl overflow-hidden">
+                    <img id="station-img" src="/images/stations/Heart.png" alt="Station Artwork" onerror="this.style.visibility='hidden'" class="max-w-full max-h-full object-contain transition-opacity duration-300 relative z-10">
+                </div>
+            </div>
+
+            <!-- Station Title -->
+            <h2 id="station-title" class="text-xl sm:text-2xl font-bold tracking-wide text-white mb-2 drop-shadow-sm">Heart UK</h2>
+
+            <!-- Stream Quality Indicator -->
+            <div class="px-4 py-1 rounded-full glass-card text-xs font-semibold text-white/90 flex items-center space-x-2 tracking-wider uppercase mb-2">
+                <i class="fa-solid fa-signal text-emerald-400 text-[10px]"></i>
+                <span>128 kbps</span>
+            </div>
+        </div>
+
+        <!-- HTML5 Audio Stream -->
+        <audio id="audio-player" preload="auto" crossorigin="anonymous">
+            <source id="audio-source" src="https://media-ssl.musicradio.com/HeartUK" type="audio/mpeg">
+        </audio>
+
+        <!-- Main Animated Play / Pause / Buffer Button -->
+        <div class="flex items-center justify-center my-6">
+            <button id="play-pause-btn" aria-label="Play Radio" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white text-gray-950 font-bold flex items-center justify-center shadow-2xl transform active:scale-95 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-white/40">
+                <i id="play-icon" class="fa-solid fa-play text-3xl sm:text-4xl ml-1 text-gray-900 icon-animated icon-state-visible"></i>
+            </button>
+        </div>
+
+        <!-- Volume Slider & Mute Controls -->
+        <div class="flex items-center space-x-3 bg-black/25 backdrop-blur-md rounded-2xl p-3 border border-white/10">
+            <button id="mute-btn" aria-label="Toggle Mute" class="text-white/80 hover:text-white transition-colors focus:outline-none p-1 flex justify-center w-6">
+                <i id="volume-icon" class="fa-solid fa-volume-high text-lg text-center icon-animated icon-state-visible"></i>
+            </button>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.8" class="flex-1 accent-white focus:outline-none">
+            <span id="volume-percentage" class="text-xs font-mono text-white/70 w-10 text-right">80%</span>
+        </div>
+    </main>
+
+    <script>
+        // Station Configuration Data
+        const STATIONS = {
+            heart: {
+                id: 'heart',
+                title: 'Heart UK',
+                url: 'https://media-ssl.musicradio.com/HeartUK',
+                image: '/images/stations/Heart.png',
+                themeClass: 'theme-heart',
+                blob1: 'bg-red-600',
+                blob2: 'bg-pink-700',
+                blob3: 'bg-red-800'
+            },
+            capital: {
+                id: 'capital',
+                title: 'Capital UK',
+                url: 'https://media-ssl.musicradio.com/CapitalUK',
+                image: '/images/stations/Capital.png',
+                themeClass: 'theme-capital',
+                blob1: 'bg-blue-600',
+                blob2: 'bg-indigo-600',
+                blob3: 'bg-sky-500'
+            },
+            smooth: {
+                id: 'smooth',
+                title: 'Smooth UK',
+                url: 'https://media-ssl.musicradio.com/SmoothUK',
+                image: '/images/stations/Smooth.png',
+                themeClass: 'theme-smooth',
+                blob1: 'bg-purple-600',
+                blob2: 'bg-fuchsia-700',
+                blob3: 'bg-violet-800'
+            }
+        };
+
+        const stationKeys = ['heart', 'capital', 'smooth'];
+        let currentStationKey = 'heart';
+
+        // DOM Elements
+        const audio = document.getElementById('audio-player');
+        const audioSource = document.getElementById('audio-source');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeIcon = document.getElementById('volume-icon');
+        const muteBtn = document.getElementById('mute-btn');
+        const volumePercentage = document.getElementById('volume-percentage');
+        const stationImg = document.getElementById('station-img');
+        const stationTitle = document.getElementById('station-title');
+        const blob1 = document.getElementById('blob-1');
+        const blob2 = document.getElementById('blob-2');
+
+        let isPlaying = false;
+        let lastVolume = 0.8;
+        let currentTargetVolume = 0.8;
+
+        // Web Audio API Context & Gain Node Initialization
+        let audioCtx = null;
+        let gainNode = null;
+        let sourceNode = null;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                    audioCtx = new AudioCtx();
+                    gainNode = audioCtx.createGain();
+                    sourceNode = audioCtx.createMediaElementSource(audio);
+                    sourceNode.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    gainNode.gain.setValueAtTime(currentTargetVolume, audioCtx.currentTime);
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            audio.volume = lastVolume;
+            updateVolume(lastVolume);
+        });
+
+        // Animated Icon Transition Helper for Play & Buffer Icons
+        function updateControlIcon(iconClasses, marginClass = 'ml-0') {
+            playIcon.classList.remove('icon-state-visible');
+            playIcon.classList.add('icon-state-hidden');
+            
+            setTimeout(() => {
+                playIcon.className = `fa-solid ${iconClasses} text-3xl sm:text-4xl ${marginClass} text-gray-900 icon-animated icon-state-hidden`;
+                void playIcon.offsetWidth; // Force Layout Reflow
+                playIcon.classList.remove('icon-state-hidden');
+                playIcon.classList.add('icon-state-visible');
+            }, 150);
+        }
+
+        // Fade Out Audio (Returns Promise)
+        function fadeOutAudio(durationMs = 350) {
+            return new Promise((resolve) => {
+                initAudioContext();
+                if (gainNode && audioCtx && isPlaying) {
+                    const now = audioCtx.currentTime;
+                    gainNode.gain.cancelScheduledValues(now);
+                    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+                    gainNode.gain.linearRampToValueAtTime(0.001, now + (durationMs / 1000));
+                    setTimeout(() => {
+                        audio.pause();
+                        resolve();
+                    }, durationMs);
+                } else {
+                    audio.pause();
+                    audio.volume = 0;
+                    resolve();
+                }
+            });
+        }
+
+        // Fade In Audio
+        function fadeInAudio(targetVol, durationMs = 350) {
+            initAudioContext();
+            if (gainNode && audioCtx) {
+                const now = audioCtx.currentTime;
+                gainNode.gain.cancelScheduledValues(now);
+                gainNode.gain.setValueAtTime(0.001, now);
+                gainNode.gain.linearRampToValueAtTime(targetVol, now + (durationMs / 1000));
+            } else {
+                audio.volume = targetVol;
+            }
+        }
+
+        // Station Selection Switcher (With Smooth Crossfade on Mid-Play Switch)
+        async function switchStation(key) {
+            if (!STATIONS[key] || key === currentStationKey) return;
+            const targetStation = STATIONS[key];
+            const wasPlaying = isPlaying;
+
+            if (isPlaying) {
+                updateControlIcon('fa-spinner fa-spin', 'ml-0');
+                await fadeOutAudio(300);
+                isPlaying = false;
+            }
+
+            currentStationKey = key;
+
+            // Tab Button States
+            stationKeys.forEach(k => {
+                const tab = document.getElementById(`tab-${k}`);
+                const text = tab.querySelector('span');
+
+                if (k === key) {
+                    tab.className = 'station-tab glass-card-active rounded-xl py-3 px-2 flex items-center justify-center transition-all duration-300 focus:outline-none';
+                    text.className = 'font-bold text-xs sm:text-sm tracking-wide text-white';
+                } else {
+                    tab.className = 'station-tab glass-card rounded-xl py-3 px-2 flex items-center justify-center transition-all duration-300 focus:outline-none';
+                    text.className = 'font-bold text-xs sm:text-sm tracking-wide text-white/80';
+                }
+            });
+
+            // Smooth Background Gradient & Blob Transitions
+            document.body.className = `${targetStation.themeClass} text-white flex items-center justify-center p-4 relative min-h-screen`;
+            blob1.className = `ambient-blob blob-1 ${targetStation.blob1}`;
+            blob2.className = `ambient-blob blob-2 ${targetStation.blob2}`;
+
+            // Update Station Info
+            stationImg.style.visibility = 'visible';
+            stationImg.src = targetStation.image;
+            stationTitle.textContent = targetStation.title;
+
+            // Load New Audio Stream Source
+            audioSource.src = targetStation.url;
+            audio.load();
+
+            if (wasPlaying) {
+                await playAudio();
+            } else {
+                updateControlIcon('fa-play', 'ml-1');
+            }
+        }
+
+        // Playback Management
+        async function togglePlay() {
+            if (isPlaying) {
+                await pauseAudio();
+            } else {
+                await playAudio();
+            }
+        }
+
+        async function playAudio() {
+            try {
+                initAudioContext();
+                updateControlIcon('fa-spinner fa-spin', 'ml-0');
+                
+                // Flush stale buffer and reload fresh stream edge if stream was paused/stalled
+                if (audio.readyState === 0 || audio.networkState === 2 || audio.paused) {
+                    audio.load();
+                }
+
+                await audio.play();
+                isPlaying = true;
+                fadeInAudio(currentTargetVolume, 350);
+                
+                updateControlIcon('fa-pause', 'ml-0');
+            } catch (err) {
+                console.error("Playback error:", err);
+                pauseAudio();
+            }
+        }
+
+        async function pauseAudio() {
+            await fadeOutAudio(350);
+            isPlaying = false;
+            // Unload source stream while paused to avoid continuous buffer buildup
+            audio.removeAttribute('src');
+            audioSource.src = STATIONS[currentStationKey].url;
+            audio.src = STATIONS[currentStationKey].url;
+            updateControlIcon('fa-play', 'ml-1');
+        }
+
+        // Volume Controls
+        function updateVolume(val) {
+            currentTargetVolume = val;
+            audio.volume = val;
+            
+            initAudioContext();
+            if (gainNode && audioCtx) {
+                gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(val, audioCtx.currentTime);
+            }
+
+            const pct = Math.round(val * 100);
+            volumePercentage.textContent = `${pct}%`;
+            volumeSlider.value = val;
+
+            // Only switch between full volume and mute icons with smooth transition
+            const targetIconClass = (val === 0) 
+                ? 'fa-solid fa-volume-xmark text-lg text-center text-red-400 icon-animated' 
+                : 'fa-solid fa-volume-high text-lg text-center text-white/80 icon-animated';
+
+            if (volumeIcon.className !== targetIconClass) {
+                volumeIcon.classList.add('volume-icon-hidden');
+                setTimeout(() => {
+                    volumeIcon.className = targetIconClass;
+                    volumeIcon.classList.remove('volume-icon-hidden');
+                }, 100);
+            }
+        }
+
+        volumeSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (val > 0) {
+                lastVolume = val;
+            }
+            updateVolume(val);
+        });
+
+        muteBtn.addEventListener('click', () => {
+            if (currentTargetVolume > 0) {
+                lastVolume = currentTargetVolume;
+                updateVolume(0);
+            } else {
+                updateVolume(lastVolume > 0 ? lastVolume : 0.8);
+            }
+        });
+
+        playPauseBtn.addEventListener('click', togglePlay);
+
+        // Audio Stream Event Listeners for Stutter & Stall Prevention
+        audio.addEventListener('waiting', () => {
+            if (isPlaying) {
+                updateControlIcon('fa-spinner fa-spin', 'ml-0');
+            }
+        });
+
+        audio.addEventListener('stalled', () => {
+            if (isPlaying) {
+                updateControlIcon('fa-spinner fa-spin', 'ml-0');
+                // Re-sync live stream edge on stall
+                setTimeout(() => {
+                    if (isPlaying) {
+                        audio.load();
+                        audio.play().catch(console.error);
+                    }
+                }, 1000);
+            }
+        });
+
+        audio.addEventListener('playing', () => {
+            if (isPlaying) {
+                updateControlIcon('fa-pause', 'ml-0');
+            }
+        });
+
+        audio.addEventListener('error', () => {
+            console.error("Audio error encountered");
+            if (isPlaying) {
+                // Reconnect live stream on error drop
+                setTimeout(() => {
+                    audio.load();
+                    audio.play().catch(console.error);
+                }, 1000);
+            } else {
+                pauseAudio();
+            }
+        });
+    </script>
+</body>
+</html>
